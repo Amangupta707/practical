@@ -1,9 +1,6 @@
 pipeline {
     agent any
-    environment {
-        SONAR_TOKEN = credentials('sonar-token')
-        DOCKER_IMAGE = "my-python-app:latest"
-    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -11,68 +8,35 @@ pipeline {
             }
         }
 
-        stage('Setup Python Environment') {
+        stage('Trivy Scan') {
             steps {
                 sh '''
-                python -m venv venv
-                source venv/bin/activate
+                # The --exit-code 1 flag will make the build fail if any vulnerabilities are found.
+                # The --severity CRITICAL,HIGH flag only reports vulnerabilities of those severities.
+                # You can adjust these flags based on your policy.
+                trivy fs --exit-code 1 --severity CRITICAL,HIGH .
+                '''
+            }
+        }
+
+        stage('Install') {
+            steps {
+                sh '''
+                python3 -m venv venv           # create virtual environment
+                . venv/bin/activate            # activate it
+                pip install --upgrade pip      # upgrade pip
                 pip install -r requirements.txt
                 '''
             }
         }
 
-        stage('Run Tests') {
+        stage('Test') {
             steps {
                 sh '''
-                source venv/bin/activate
-                pytest tests/
+                . venv/bin/activate
+                pytest --maxfail=1 --disable-warnings -q
                 '''
             }
-        }
-
-        stage('SonarQube Scan') {
-            steps {
-                withSonarQubeEnv('sonarqube') {
-                    sh '''
-                    source venv/bin/activate
-                    sonar-scanner -Dsonar.login=$SONAR_TOKEN
-                    '''
-                }
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                script {
-                    sh "docker build -t ${DOCKER_IMAGE} ."
-                }
-            }
-        }
-
-        stage('Trivy Scan') {
-            steps {
-                sh "trivy image ${DOCKER_IMAGE}"
-            }
-        }
-
-        stage('Docker Scout Scan') {
-            steps {
-                sh "docker scout analyze ${DOCKER_IMAGE}"
-            }
-        }
-
-        stage('Deploy to Kubernetes') {
-            steps {
-                sh '''
-                kubectl apply -f k8s/deployment.yaml
-                kubectl apply -f k8s/service.yaml
-                '''
-            }
-        }
-    }
-    post {
-        always {
-            echo 'Pipeline completed.'
         }
     }
 }
