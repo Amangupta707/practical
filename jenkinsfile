@@ -4,28 +4,29 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/Amangupta707/practical.git'
-            }
-        }
+                git branch: 'main', url: 'pipeline {
+    agent any
 
-        stage('Trivy Scan') {
+    stages {
+        stage('Checkout') {
             steps {
-                sh '''
-                # The --exit-code 1 flag will make the build fail if any vulnerabilities are found.
-                # The --severity CRITICAL,HIGH flag only reports vulnerabilities of those severities.
-                # You can adjust these flags based on your policy.
-                trivy fs --exit-code 1 --severity CRITICAL,HIGH .
-                '''
+                git branch: 'main', url: 'pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Amangupta707/practical.git'
             }
         }
 
         stage('Install') {
             steps {
                 sh '''
-                python3 -m venv venv           # create virtual environment
-                . venv/bin/activate            # activate it
-                pip install --upgrade pip      # upgrade pip
-                pip install -r requirements.txt
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
                 '''
             }
         }
@@ -33,10 +34,109 @@ pipeline {
         stage('Test') {
             steps {
                 sh '''
-                . venv/bin/activate
-                pytest --maxfail=1 --disable-warnings -q
+                    . venv/bin/activate
+                    pytest --maxfail=1 --disable-warnings -q
                 '''
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                echo 'Running Trivy vulnerability scan...'
+                sh '''
+                    mkdir -p trivy-reports
+                    trivy fs --format json -o trivy-reports/trivy-report.json .
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-reports/trivy-report.json', fingerprint: true
+                }
             }
         }
     }
 }
+
+'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pytest --maxfail=1 --disable-warnings -q
+                '''
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                echo 'Running Trivy vulnerability scan...'
+                sh '''
+                    mkdir -p trivy-reports
+                    trivy fs --format json -o trivy-reports/trivy-report.json .
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-reports/trivy-report.json', fingerprint: true
+                }
+            }
+        }
+    }
+}
+
+'
+            }
+        }
+
+        stage('Install') {
+            steps {
+                sh '''
+                    python3 -m venv venv
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Test') {
+            steps {
+                sh '''
+                    . venv/bin/activate
+                    pytest --maxfail=1 --disable-warnings -q
+                '''
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                echo 'Running Trivy vulnerability scan...'
+                sh '''
+                    mkdir -p trivy-reports
+                    trivy fs --format json -o trivy-reports/trivy-report.json .
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-reports/trivy-report.json', fingerprint: true
+                }
+            }
+        }
+    }
+}
+
+
